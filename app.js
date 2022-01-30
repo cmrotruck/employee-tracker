@@ -14,7 +14,7 @@ const db = mysql.createConnection(
     password: "!September03!",
     database: "employee_tracker",
   },
-  console.log("Connected to the election database.")
+  console.log("Connected to the employee_tracker database.")
 );
 
 function promptUser() {
@@ -141,7 +141,13 @@ function promptUser() {
                       choices: results,
                     })
                     .then((input) => {
-                      id = results[0].id;
+                        const { department } = input;
+                        //TODO: get role id and put into params
+                        results.forEach((row) => {
+                          if (row.name === department) {
+                            id = row.id;
+                          }
+                        });
                       const params = [title, salary, id];
                       db.query(sql, params, (err, results) => {
                         if (err) {
