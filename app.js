@@ -2,6 +2,7 @@ const { param } = require("express/lib/request");
 const res = require("express/lib/response");
 const inquirer = require("inquirer");
 const mysql = require("mysql2");
+const cTable = require('console.table');
 
 //connect to db
 const db = mysql.createConnection(
