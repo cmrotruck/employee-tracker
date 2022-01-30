@@ -45,7 +45,10 @@ function promptUser() {
               console.log(err);
             }
             console.log("\n");
+            console.log("\n");
             console.table(results);
+            console.log("\n");
+            console.log("\n");
             promptUser();
           });
           break;
@@ -57,7 +60,10 @@ function promptUser() {
               console.log(err);
             }
             console.log("\n");
+            console.log("\n");
             console.table(results);
+            console.log("\n");
+            console.log("\n");
             promptUser();
           });
           break;
@@ -69,7 +75,10 @@ function promptUser() {
               console.log(err);
             }
             console.log("\n");
+            console.log("\n");
             console.table(results);
+            console.log("\n");
+            console.log("\n");
             promptUser();
           });
           break;
@@ -148,7 +157,8 @@ function promptUser() {
           break;
         }
         case "Add an employee": {
-            var params = [];
+          var params = [];
+
           inquirer
             .prompt([
               {
@@ -163,9 +173,9 @@ function promptUser() {
               },
             ])
             .then((answers) => {
-                const { first_name, last_name } = answers;
-                params.push(first_name);
-                params.push(last_name);
+              const { first_name, last_name } = answers;
+              params.push(first_name);
+              params.push(last_name);
 
               //get list of roles
               const sql = `SELECT * FROM employee_role;`;
@@ -173,10 +183,11 @@ function promptUser() {
                 if (err) {
                   console.log(err);
                 } else {
-                    var roles = [];
-                    rows.forEach((row) => {
-                        roles.push(row.title);
-                    })
+                  var roles = [];
+                  rows.forEach((row) => {
+                    roles.push(row.title);
+                  });
+
                   inquirer
                     .prompt([
                       {
@@ -187,13 +198,152 @@ function promptUser() {
                       },
                     ])
                     .then((answer) => {
-                      params.push(answer);
+                      const { role } = answer;
+                      //TODO: get role id and put into params
+                      rows.forEach((row) => {
+                        if (row.title === role) {
+                          params.push(row.id);
+                        }
+                      });
+
                       // get employee Names to get manager id.
-                      
+                      const sql = `SELECT * FROM employee;`;
+                      db.query(sql, (err, rows) => {
+                        if (err) {
+                          console.log(err);
+                        } else {
+                          var employees = [];
+                          //create full names to select from
+                          rows.forEach((row) => {
+                            employees.push(
+                              row.first_name + " " + row.last_name
+                            );
+                          });
+                          //have user select manager name
+                          inquirer
+                            .prompt([
+                              {
+                                type: "list",
+                                name: "manager",
+                                message: `Please select employee's manager: `,
+                                choices: employees,
+                              },
+                            ])
+                            .then((answer) => {
+                              const { manager } = answer;
+
+                              //find ID for matching full name
+                              rows.forEach((row) => {
+                                if (
+                                  row.first_name + " " + row.last_name ===
+                                  manager
+                                ) {
+                                  params.push(row.id);
+                                }
+                              });
+
+                              //save to sql database
+                              const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?);`;
+                              db.query(sql, params, (err, results) => {
+                                if (err) {
+                                  console.log(err);
+                                } else {
+                                  console.log(
+                                    `${first_name} ${last_name} has been added`
+                                  );
+                                  promptUser();
+                                }
+                              });
+                            });
+                        }
+                      });
                     });
                 }
               });
             });
+          break;
+        }
+        case "Update an employee role": {
+          var paramEmployee;
+          var paramRole;
+          //display list of employees to update
+          const listSql = "SELECT * FROM employee";
+          db.query(listSql, (err, rows) => {
+            if (err) {
+              console.log(err);
+            } else {
+              var employees = [];
+              //create full names to select from
+              rows.forEach((row) => {
+                employees.push(row.first_name + " " + row.last_name);
+              });
+              //display list for selection
+              inquirer
+                .prompt([
+                  {
+                    type: "list",
+                    name: "employee",
+                    message: `Which employee would you like to update? `,
+                    choices: employees,
+                  },
+                ])
+                .then((answer) => {
+                  const { employee } = answer;
+
+                  //find ID for matching employee name
+                  rows.forEach((row) => {
+                    if (row.first_name + " " + row.last_name === employee) {
+                      paramEmployee = row.id;
+                    }
+                  });
+
+                    //get list of roles to update to
+                    const sql = `SELECT * FROM employee_role;`;
+                    db.query(sql, (err, rows) => {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            var roles = [];
+                            rows.forEach((row) => {
+                                roles.push(row.title);
+                            });
+                            inquirer
+                                .prompt([
+                                    {
+                                        type: "list",
+                                        name: "role",
+                                        message: `Which role do you want to assign to the selected employee? `,
+                                        choices: roles,
+                                    },
+                                ])
+                                .then((answer) => {
+                                    const { role } = answer;
+                                    //TODO: get role id and put into params
+                                    rows.forEach((row) => {
+                                        if (row.title === role) {
+                                            paramRole = row.id;
+                                        }
+                                    });
+
+                                    //update employee
+                                    const sql = `UPDATE employee SET role_id=? WHERE id=?;`
+                                    const params = [paramRole, paramEmployee]
+
+                                    db.query(sql, params, (err, results) => {
+                                        if (err) {
+                                            console.log(err);
+                                        } else {
+                                            console.log(`Updated employee's role`);
+                                            promptUser();
+                                        }
+                                    })
+
+                                });
+                        }
+                    });
+                });
+            }
+          });
           break;
         }
         default: {
